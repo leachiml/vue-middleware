@@ -1,49 +1,49 @@
-import { type App } from 'vue'
-import { type RouteMeta } from 'vue-router'
+import { type App } from "vue";
+import { type RouteMeta } from "vue-router";
 
 export abstract class Driver {
-  _app: App
+  _app: App;
 
   constructor(app: App) {
-    this._app = app
+    this._app = app;
   }
 
-  abstract can(): (value: string) => boolean
+  abstract can(): (value: string) => boolean;
 
-  abstract is(): (value: string) => boolean
+  abstract is(): (value: string) => boolean;
 
   _hasntRole({ roles }: RouteMeta) {
-    roles = this._normalize(roles as string | [])
+    roles = this._normalize(roles as string | []);
 
-    return !roles || this.is()(roles as string) ? false : true
+    return !roles || this.is()(roles as string) ? false : true;
   }
 
   _hasntPermissions({ permissions }: RouteMeta) {
     if (!permissions) {
-      return false
+      return false;
     }
 
-    permissions = this._normalize(permissions as string | [])
+    permissions = this._normalize(permissions as string | []);
 
-    return !permissions || this.can()(permissions as string) ? false : true
+    return !permissions || this.can()(permissions as string) ? false : true;
   }
 
   _normalize(value: string[] | string) {
     if (Array.isArray(value)) {
-      return value.join('&')
+      return value.join("&");
     }
 
-    if (typeof value === 'string') {
-      return value
+    if (typeof value === "string") {
+      return value;
     }
 
-    return ''
+    return "";
   }
 
   _lookup() {
-    const globalProperties = this._app.config.globalProperties
+    const globalProperties = this._app.config.globalProperties;
 
-    globalProperties.can = this.can()
-    globalProperties.is = this.is()
+    globalProperties.can = this.can();
+    globalProperties.is = this.is();
   }
 }
