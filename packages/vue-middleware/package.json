@@ -2,7 +2,7 @@
   "name": "vue-middleware",
   "version": "1.0.0-alpha.5",
   "description": "Vue middleware is a powerful Vuejs plugin for creating custom middleware and manage roles and permissions easily.",
-  "main": "dist/vue-middleware.js",
+  "main": "./dist/vue-middleware.js",
   "type": "module",
   "license": "MIT",
   "files": [
@@ -11,20 +11,26 @@
     "README.md"
   ],
   "scripts": {
-    "watch": "vue-tsc && vite build --watch --minify false"
+    "build": "tsc -b && vite build",
+    "watch": "tsc -b && vite build --watch --minify false"
   },
   "dependencies": {
     "vue": "^3.5.13",
     "vue-router": "^4.5.1"
   },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.4"
+  },
   "module": "./dist/vue-middleware.js",
   "types": "./dist/vue-middleware.d.ts",
   "exports": {
-    "default": "./dist/vue-middleware.esm.js",
-    "import": "./dist/vue-middleware.esm.js",
-    "require": "./dist/vue-middleware.cjs",
-    "types": {
-      "import": "./dist/vue-middleware.d.ts"
+    ".": {
+      "types": {
+        "import": "./dist/vue-middleware.d.ts"
+      },
+      "import": "./dist/vue-middleware.esm.js",
+      "require": "./dist/vue-middleware.cjs"
     }
   }
 }
