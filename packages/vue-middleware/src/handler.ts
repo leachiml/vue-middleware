@@ -193,6 +193,7 @@ function runMiddleware(
   name: string,
   ctx: MiddlewareContext
 ): NavigationGuardReturn {
+  // Get navigation guard from middleware name
   const [middleware, guard]: MiddlewareName = name.split(":") as MiddlewareName;
 
   if (!Array.prototype.hasOwnProperty.call(middlewares, middleware)) {
@@ -201,11 +202,13 @@ function runMiddleware(
     );
   }
 
-  // Run specified middleware from the middleware register
-  return middlewares[middleware]({
+  let middlewareExecContext: MiddlewareContext = {
     ...ctx,
     guard,
-  });
+  };
+
+  // Run specified middleware from the middleware register with merged context
+  return middlewares[middleware](middlewareExecContext);
 }
 
 /**
