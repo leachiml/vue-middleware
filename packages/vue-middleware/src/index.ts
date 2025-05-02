@@ -2,7 +2,12 @@ import type { App, Plugin } from "vue";
 import type { Router } from "vue-router";
 import { type Options, handler } from "./handler";
 
-export type { Options, MiddlewareContext } from "./handler";
+export type {
+  Options,
+  MiddlewareContext,
+  Middleware,
+  Middlewares,
+} from "./handler";
 
 export { Driver } from "./drivers/driver";
 export * from "./drivers";
