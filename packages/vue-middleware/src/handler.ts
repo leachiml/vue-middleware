@@ -45,6 +45,10 @@ type MiddlewareName = [string, string?];
  */
 export interface Options {
   /**
+   * Router used by the Plugin
+   */
+  router: Router;
+  /**
    * Registered Middlewares that can be used by Routes
    */
   middleware: Middlewares;
@@ -72,10 +76,9 @@ export interface Options {
  * Main Vue Plugin handle
  *
  * @param app Vue App instance
- * @param router Vue Router instance
  * @param options Optional plugin Settings
  */
-export function handler(app: App, router: Router, options: Options) {
+export function handler(app: App, options: Options) {
   //const { pageTitle, middleware, permissions, hooks } = options;
 
   let permissionsDriver: Driver | undefined;
@@ -129,6 +132,7 @@ export function handler(app: App, router: Router, options: Options) {
     //   router.push(to);
     // };
 
+    const router: Router = options.router;
     const ctx: MiddlewareContext = {
       app,
       router,
@@ -160,10 +164,10 @@ export function handler(app: App, router: Router, options: Options) {
   };
 
   // Add middleware Navigation Guard to Router instance
-  router.beforeEach(middlewareGuard);
+  options.router.beforeEach(middlewareGuard);
 
   // Execute registered Post-Hooks
-  router.afterEach((to, from) => {
+  options.router.afterEach((to, from) => {
     if (options.hooks?.onAfterEach) {
       options.hooks.onAfterEach(to, from);
     }

@@ -1,5 +1,4 @@
 import type { App, Plugin } from "vue";
-import type { Router } from "vue-router";
 import { type Options, handler } from "./handler";
 
 export type {
@@ -31,14 +30,13 @@ declare module "vue-router" {
 const plugin: Plugin<Options> = {
   install(app: App, options: Options) {
     // Check if Vue-Router is defined in App
-    const router: Router = app.config.globalProperties.$router;
-    if (!app.config.globalProperties.$router) {
+    if (!options.router) {
       throw new Error(
         "The vue-router is required in order to work with vue-middleware."
       );
     }
 
-    handler(app, router, options);
+    handler(app, options);
   },
 };
 
