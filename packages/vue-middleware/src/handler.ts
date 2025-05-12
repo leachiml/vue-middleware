@@ -8,7 +8,6 @@ import type {
   NavigationGuardWithThis,
 } from "vue-router";
 import { Driver } from "./drivers/driver";
-
 export interface MiddlewareContext {
   app: App;
   router: Router;
@@ -80,7 +79,6 @@ export interface Options {
  */
 export function handler(app: App, options: Options) {
   //const { pageTitle, middleware, permissions, hooks } = options;
-
   let permissionsDriver: Driver | undefined;
   if (options.permissions?.driver) {
     permissionsDriver = new options.permissions.driver(app);
@@ -160,6 +158,11 @@ export function handler(app: App, options: Options) {
 
     if (result.some((value: NavigationGuardReturn) => value === false)) {
       return false;
+    }
+
+    // If result is a RouteLocation => redirect to first one
+    if (result.some((v: NavigationGuardReturn) => typeof v === "object")) {
+      return result[0];
     }
   };
 
