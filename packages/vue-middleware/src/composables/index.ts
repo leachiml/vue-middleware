@@ -1,10 +1,15 @@
-import { getCurrentInstance } from 'vue'
+import { inject } from "vue";
+import { permissionKey } from "./injectionKeys";
+import { Permission } from "../drivers/driver";
 
-export function usePermissions() {
-  const globalprops = getCurrentInstance()?.appContext.config.globalProperties
-  
-  return {
-    is: globalprops?.is,
-    can: globalprops?.can,
-  }
+export function usePermissions(): Permission {
+  //const globalprops = getCurrentInstance()?.appContext.config.globalProperties
+  return inject(permissionKey, {
+    can: (_: string) => {
+      return false;
+    },
+    is: (_: string) => {
+      return false;
+    },
+  });
 }
