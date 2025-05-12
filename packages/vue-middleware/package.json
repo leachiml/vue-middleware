@@ -1,6 +1,6 @@
 {
   "name": "vue-middleware",
-  "version": "1.0.0-alpha.5",
+  "version": "2.0.0-alpha",
   "description": "Vue middleware is a powerful Vuejs plugin for creating custom middleware and manage roles and permissions easily.",
   "main": "./dist/vue-middleware.js",
   "type": "module",
