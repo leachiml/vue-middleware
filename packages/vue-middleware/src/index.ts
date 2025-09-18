@@ -1,4 +1,4 @@
-import type { App, Plugin } from "vue";
+import type { App, ObjectPlugin } from "vue";
 import { type Options, handler } from "./handler";
 
 export type {
@@ -27,7 +27,7 @@ declare module "vue-router" {
   }
 }
 
-const plugin: Plugin<Options> = {
+const plugin: ObjectPlugin<Options> = {
   install(app: App, options: Options) {
     // Check if Vue-Router is defined in App
     if (!options.router) {
