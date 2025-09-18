@@ -14,6 +14,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    // "noImplicitAny": true, already set by "strict"
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    // "noImplicitThis": true, already set by "strict"
     "types": ["node"],
-  },
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true
+  }
 }
