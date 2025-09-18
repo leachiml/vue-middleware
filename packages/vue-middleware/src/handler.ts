@@ -6,8 +6,10 @@ import type {
   RouteLocationNormalizedLoaded,
   NavigationGuardReturn,
   NavigationGuardWithThis,
+  RouteLocationAsPathGeneric,
 } from "vue-router";
 import { Driver } from "./drivers/driver";
+import { Awaitable } from "./globalDeclarations";
 export interface MiddlewareContext {
   app: App;
   router: Router;
@@ -24,7 +26,8 @@ export interface Middlewares {
 }
 
 /**
- * Registered Middleware
+ * Registered Middleware Function
+ * (ctx: MiddlewareContext) => {}
  */
 export interface Middleware {
   (ctx: MiddlewareContext): NavigationGuardReturn;
@@ -93,10 +96,10 @@ export function handler(app: App, options: Options) {
   /**
    * Middleware Navigation Guard
    */
-  let middlewareGuard: NavigationGuardWithThis<undefined> = (
+  let middlewareGuard: NavigationGuardWithThis<unknown> = (
     to: RouteLocationNormalized,
     from: RouteLocationNormalizedLoaded
-  ): NavigationGuardReturn => {
+  ): Awaitable<NavigationGuardReturn> => {
     // Execute registered Pre-Hooks
     if (options.hooks?.onBeforeEach) {
       options.hooks.onBeforeEach(to, from);
@@ -114,21 +117,47 @@ export function handler(app: App, options: Options) {
 
     // Handle the role and permissions with Driver if one is configured
     if (permissionsDriver) {
-      const fallbackTo = to.meta.fallbackTo || "";
-      if (permissionsDriver._hasntRole(to.meta)) {
-        return {
-          path: fallbackTo,
-        };
-      } else if (permissionsDriver._hasntPermissions(to.meta)) {
-        return {
-          path: fallbackTo,
-        };
+      const fallbackTo: string = to.meta.fallbackTo ?? "";
+      // Check if unauthorized -> If so, redirect
+
+      // Check if Route has not the required Roles
+      const roleCheck: Awaitable<boolean> = permissionsDriver._hasntRole(
+        to.meta
+      );
+
+      // Check if Route has not the Required Permissions
+      const permCheck: Awaitable<boolean> = permissionsDriver._hasntPermissions(
+        to.meta
+      );
+
+      if (typeof roleCheck === "boolean") {
+        if (roleCheck) {
+          return <RouteLocationAsPathGeneric>{
+            path: fallbackTo,
+          };
+        }
+      }
+
+      if (typeof permCheck === "boolean") {
+        if (permCheck) {
+          return <RouteLocationAsPathGeneric>{
+            path: fallbackTo,
+          };
+        }
+      }
+
+      if (typeof roleCheck !== "boolean" && typeof permCheck !== "boolean") {
+        return roleCheck.then((unauthorized) => {
+          if (unauthorized) {
+            return <RouteLocationAsPathGeneric>{
+              path: fallbackTo,
+            };
+          }
+          // FIXME: Fix Permission Checking
+          return true;
+        });
       }
     }
-
-    // const redirect = (to: RouteLocationRaw) => {
-    //   router.push(to);
-    // };
 
     const router: Router = options.router;
     const ctx: MiddlewareContext = {
@@ -138,9 +167,12 @@ export function handler(app: App, options: Options) {
       to,
     };
 
-    // Well, looks like we don't have any middleware to run, so we can call
-    // next now, otherwise we will ensure that each middleware doesn't return
-    // failure by returning explicit `false` or `ABORT_KEY`..
+    /**
+     * Well, looks like we don't have any middleware to run, so we can call
+     * next now, otherwise we will ensure that each middleware doesn't return
+     * failure by returning explicit `false` or `ABORT_KEY`..
+     */
+    // Get Middlewares that should be run for the route
     const middlewaresToRun: string[] = getMiddlewares(
       to.matched.map((match) => match.meta)
     );
@@ -150,18 +182,26 @@ export function handler(app: App, options: Options) {
       return true;
     }
 
-    const result: NavigationGuardReturn[] = middlewaresToRun.map(
+    // Run all Middlewares and store results
+    const result: Awaitable<NavigationGuardReturn>[] = middlewaresToRun.map(
       (middlewareName) => {
         return runMiddleware(options.middleware, middlewareName, ctx);
       }
     );
 
-    if (result.some((value: NavigationGuardReturn) => value === false)) {
+    // If a middleware returns false (Unauthorized) => return false
+    if (
+      result.some((value: Awaitable<NavigationGuardReturn>) => value === false)
+    ) {
       return false;
     }
 
     // If result is a RouteLocation => redirect to first one
-    if (result.some((v: NavigationGuardReturn) => typeof v === "object")) {
+    if (
+      result.some(
+        (v: Awaitable<NavigationGuardReturn>) => typeof v === "object"
+      )
+    ) {
       return result[0];
     }
   };
@@ -199,7 +239,7 @@ function runMiddleware(
   middlewares: Middlewares,
   name: string,
   ctx: MiddlewareContext
-): NavigationGuardReturn {
+): Awaitable<NavigationGuardReturn> {
   // Get navigation guard from middleware name
   const [middleware, guard]: MiddlewareName = name.split(":") as MiddlewareName;
 
@@ -211,11 +251,16 @@ function runMiddleware(
 
   let middlewareExecContext: MiddlewareContext = {
     ...ctx,
-    guard,
+    guard: guard || "",
   };
 
   // Run specified middleware from the middleware register with merged context
-  return middlewares[middleware](middlewareExecContext);
+  let middlewareFunc: Middleware =
+    middlewares[middleware] ??
+    ((_: MiddlewareContext) => {
+      return false;
+    });
+  return middlewareFunc(middlewareExecContext);
 }
 
 /**
@@ -225,14 +270,14 @@ function runMiddleware(
  * @returns a list of middleware names
  */
 function getMiddlewares(metas: RouteMeta[]): string[] {
-  let middlewareNames = metas
+  const middlewareNames: string[] = metas
     .map((meta: RouteMeta): string[] => {
       // Filter out excluded middlewares
       if (meta.excludeMiddleware) {
         const excludes = meta.excludeMiddleware;
-        meta.middleware = meta.middleware?.filter(
-          (name) => !excludes.includes(name)
-        );
+        meta.middleware =
+          meta.middleware?.filter((name) => !excludes.includes(name)) ||
+          ([] as string[]);
       }
 
       if (meta.middleware) {
@@ -241,6 +286,7 @@ function getMiddlewares(metas: RouteMeta[]): string[] {
       }
       return [];
     })
+    // Concat middlewares from all RouteMeta(s)
     .reduce((prev: string[], curr: string[]): string[] => {
       return prev.concat(curr);
     });

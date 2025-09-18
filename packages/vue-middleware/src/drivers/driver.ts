@@ -1,4 +1,5 @@
-import { permissionKey } from "@/composables/injectionKeys";
+import { Awaitable } from "../globalDeclarations";
+import { permissionKey } from "../composables/injectionKeys";
 import { readonly, type App } from "vue";
 import { type RouteMeta } from "vue-router";
 
@@ -10,8 +11,18 @@ declare module "vue-router" {
 }
 
 export interface Permission {
-  can: (value: string) => boolean;
-  is: (value: string) => boolean;
+  /**
+   * Check if current authenticated User has the required Permission(s)
+   * @param serializedPermissions that are required for the check
+   * @returns true if User has the required permissions
+   */
+  can: (value: string) => Awaitable<boolean>;
+  /**
+   * Check if current authenticated User has the required Role(s)
+   * @param serializedRoles that are required for the check
+   * @returns true if User has the required roles
+   */
+  is: (value: string) => Awaitable<boolean>;
 }
 
 /**
@@ -25,39 +36,67 @@ export abstract class Driver implements Permission {
     this._app = app;
   }
 
-  abstract can: (value: string) => boolean;
-  abstract is: (value: string) => boolean;
+  abstract can: (value: string) => Awaitable<boolean>;
+  abstract is: (value: string) => Awaitable<boolean>;
 
   /**
-   * Check if route meta tag has no roles
+   * Check if route meta tag has no roles OR not the required roles
    *
    * @param meta tag to be checked
-   * @returns
+   * @returns true if Route has permissions
    * @internal
    */
-  _hasntRole({ roles }: RouteMeta): boolean {
+  _hasntRole({ roles }: RouteMeta): Awaitable<boolean> {
     if (!roles || !(roles as []).length) {
-      return false;
+      return false; // No roles found
     }
 
+    // Normalize/Serialize Roles into rule string
     const normalizedRoles = this._normalize(roles);
-    return !this.is(normalizedRoles);
+
+    // Execute *.is() from Driver to check Roles
+    const result: Awaitable<boolean> = this.is(normalizedRoles);
+    if (typeof result === "boolean") {
+      return !result;
+    } else {
+      return new Promise((resolve, reject) => {
+        result
+          .then((value) => {
+            resolve(!value);
+          })
+          .catch(reject);
+      });
+    }
   }
 
   /**
-   * Check if route meta tag has no permissions
+   * Check if route meta tag has no permissions OR not the required ones
    *
    * @param meta tag to be checked
    * @returns
    * @internal
    */
-  _hasntPermissions({ permissions }: RouteMeta): boolean {
+  _hasntPermissions({ permissions }: RouteMeta): Awaitable<boolean> {
     if (!permissions || !(permissions as []).length) {
       return false;
     }
 
+    // Normalize/Serialize Permissions into rule string
     const normalizedPermissions = this._normalize(permissions);
-    return !this.can(normalizedPermissions);
+
+    // Execute *.can() from Driver to check Permissions
+    const result: Awaitable<boolean> = this.can(normalizedPermissions);
+    if (typeof result === "boolean") {
+      return !result;
+    } else {
+      return new Promise((resolve, reject) => {
+        result
+          .then((value) => {
+            resolve(!value);
+          })
+          .catch(reject);
+      });
+    }
   }
 
   /**
@@ -66,7 +105,8 @@ export abstract class Driver implements Permission {
    * @param value
    * @returns normalized string
    */
-  _normalize(value: string[] | string | undefined): string {
+  _normalize(value: string[] | string): string {
+    // If input is string Array, normalize with AND
     if (Array.isArray(value)) {
       return value.join("&");
     }
