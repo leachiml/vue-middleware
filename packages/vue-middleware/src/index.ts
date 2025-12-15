@@ -1,8 +1,11 @@
 import type { App, ObjectPlugin } from "vue";
-import { type Options, handler } from "./handler";
+import {
+  type VueMiddlewareOptions as VueMiddlewareOptions,
+  handler,
+} from "./handler";
 
 export type {
-  Options,
+  VueMiddlewareOptions as Options,
   MiddlewareContext,
   Middleware,
   Middlewares,
@@ -27,8 +30,8 @@ declare module "vue-router" {
   }
 }
 
-const plugin: ObjectPlugin<Options> = {
-  install(app: App, options: Options) {
+const plugin: ObjectPlugin<VueMiddlewareOptions> = {
+  install(app: App, options: VueMiddlewareOptions) {
     // Check if Vue-Router is defined in App
     if (!options.router) {
       throw new Error(

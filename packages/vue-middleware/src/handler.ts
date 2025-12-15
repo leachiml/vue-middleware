@@ -45,7 +45,7 @@ type MiddlewareName = [string, string?];
 /**
  *  Vue Middleware Plugin Options
  */
-export interface Options {
+export interface VueMiddlewareOptions {
   /**
    * Router used by the Plugin
    */
@@ -80,7 +80,7 @@ export interface Options {
  * @param app Vue App instance
  * @param options Optional plugin Settings
  */
-export function handler(app: App, options: Options) {
+export function handler(app: App, options: VueMiddlewareOptions) {
   //const { pageTitle, middleware, permissions, hooks } = options;
   let permissionsDriver: Driver | undefined;
   if (options.permissions?.driver) {
